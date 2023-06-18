@@ -3,7 +3,7 @@ from django.db import models
 
 
 class Tag(models.Model):
-    title = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=50, unique=True)
     color = models.CharField(max_length=7, unique=True)
     slug = models.SlugField(max_length=50, unique=True)
 
@@ -19,15 +19,16 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes'
     )
+    text = models.TextField()
     name = models.CharField(max_length=200)
-    image = models.ImageField(upload_to='recipes/')
+    image = models.ImageField(upload_to='recipes/', blank=True)
     description = models.TextField()
     ingredients = models.ManyToManyField(
         Ingredient,
         through='IngredientAmount',
         through_fields=('recipe', 'ingredient'),
     )
-    tags = models.ManyToManyField(Tag, related_name='recipes')
+    tags = models.ManyToManyField(Tag, related_name='recipes', blank=True)
     cooking_time = models.PositiveIntegerField()
     pub_date = models.DateTimeField(auto_now_add=True)
 
