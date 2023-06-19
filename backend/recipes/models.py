@@ -1,70 +1,116 @@
-from django.contrib.auth import get_user_model
 from django.db import models
+from django.conf import settings
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-    color = models.CharField(max_length=7, unique=True)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200, unique=True)
+    color = models.CharField(max_length=7)
+
+    class Meta:
+        verbose_name = "Тег"
+        verbose_name_plural = "Теги"
+
+    def __str__(self):
+        return self.name
 
 
 class Ingredient(models.Model):
     name = models.CharField(max_length=200)
-    measurement_unit = models.CharField(max_length=50)
+    measurement_unit = models.CharField(
+        max_length=10,
+        blank=False,
+        default='шт'
+    )
+
+    class Meta:
+        ordering = ('name', )
+        verbose_name = "Ингредиенты"
+        verbose_name_plural = "Ингредиенты"
+
+    def __str__(self):
+        return self.name
 
 
 class Recipe(models.Model):
-    author = models.ForeignKey(
-        get_user_model(),
-        on_delete=models.CASCADE,
-        related_name='recipes'
-    )
-    text = models.TextField()
     name = models.CharField(max_length=200)
-    image = models.ImageField(upload_to='recipes/', blank=True)
-    description = models.TextField()
-    ingredients = models.ManyToManyField(
-        Ingredient,
-        through='IngredientAmount',
-        through_fields=('recipe', 'ingredient'),
+    image = models.ImageField(
+        upload_to='recipes/',
+        blank=True
     )
-    tags = models.ManyToManyField(Tag, related_name='recipes', blank=True)
-    cooking_time = models.PositiveIntegerField()
+    tags = models.ManyToManyField(Tag, through='RecipeTag')
+    cooking_time = models.PositiveSmallIntegerField(default=0)
+    text = models.TextField()
+    ingredients = models.ManyToManyField(Ingredient, through='RecipeIngredient')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     pub_date = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name = 'Рецепт'
+        verbose_name_plural = 'Рецепты'
 
-class IngredientAmount(models.Model):
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    amount = models.PositiveIntegerField()
+    def __str__(self):
+        return self.name
 
 
-class FavoriteRecipe(models.Model):
-    user = models.ForeignKey(
-        get_user_model(),
+class RecipeTag(models.Model):
+    recipe = models.ForeignKey(
+        Recipe,
         on_delete=models.CASCADE,
-        related_name='favorite_recipes'
+        related_name='recipetag')
+    tag = models.ForeignKey(
+        Tag,
+        on_delete=models.CASCADE,
+        related_name='recipetag')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class RecipeIngredient(models.Model):
+    recipe = models.ForeignKey(
+        Recipe, related_name='recipeingredients',
+        on_delete=models.CASCADE
     )
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+    )
+    amount = models.IntegerField()
+
+    def __str__(self):
+        return f'{self.ingredient} - {self.amount}'
+
+
+class Subscription(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='follower')
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='followed')
+
+    def __str__(self):
+        return f'{self.user} follows {self.author}'
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='favorites')
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='favorited_by')
 
 
 class ShoppingList(models.Model):
     user = models.ForeignKey(
-        get_user_model(),
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='shopping_lists'
-    )
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-
-
-class Follow(models.Model):
-    user = models.ForeignKey(
-        get_user_model(),
+        related_name='shopping_lists')
+    recipe = models.ForeignKey(
+        Recipe,
         on_delete=models.CASCADE,
-        related_name='follower'
-    )
-    author = models.ForeignKey(
-        get_user_model(),
-        on_delete=models.CASCADE,
-        related_name='following'
-    )
+        related_name='in_shopping_list')
