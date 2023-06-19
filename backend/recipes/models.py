@@ -34,15 +34,14 @@ class Ingredient(models.Model):
 
 class Recipe(models.Model):
     name = models.CharField(max_length=200)
-    image = models.ImageFielпше d(
+    image = models.ImageField(
         upload_to='recipes/',
         blank=True
     )
-    tags = models.ManyToManyField(Tag, related_name='recipes')
+    tags = models.ManyToManyField(Tag, through='RecipeTag')
     cooking_time = models.PositiveSmallIntegerField(default=0)
     text = models.TextField()
-    # ingredients = models.ManyToManyField(Ingredient, through='RecipeIngredient')
-    ingredients = models.ManyToManyField(Ingredient, related_name='recipes')
+    ingredients = models.ManyToManyField(Ingredient, through='RecipeIngredient')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     pub_date = models.DateTimeField(auto_now_add=True)
 
