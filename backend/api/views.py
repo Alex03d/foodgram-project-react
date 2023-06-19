@@ -1,42 +1,28 @@
-from rest_framework import viewsets
-from recipes.models import *
-from .serializers import UserSerializer, TagSerializer, IngredientSerializer, RecipeIngredientSerializer, RecipeSerializer, SubscriptionSerializer, FavoriteSerializer, ShoppingListSerializer
-from django.contrib.auth.models import User
-
-
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-
-class TagViewSet(viewsets.ModelViewSet):
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-
-
-class IngredientViewSet(viewsets.ModelViewSet):
-    queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializer
+from rest_framework import viewsets, mixins, status
+from rest_framework.response import Response
+from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient
+from .serializers import RecipeSerializer, IngredientSerializer, RecipeIngredientSerializer
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
 
-    def get_serializer_context(self):
-        return {'request': self.request}
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        data['author'] = request.user.id
+        recipe = RecipeSerializer(data=data)
+        if recipe.is_valid():
+            recipe.save()
+            return Response(recipe.data, status=status.HTTP_201_CREATED)
+        return Response(recipe.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    queryset = Subscription.objects.all()
-    serializer_class = SubscriptionSerializer
-
-
-class FavoriteViewSet(viewsets.ModelViewSet):
-    queryset = Favorite.objects.all()
-    serializer_class = FavoriteSerializer
-
-
-class ShoppingListViewSet(viewsets.ModelViewSet):
-    queryset = ShoppingList.objects.all()
-    serializer_class = ShoppingListSerializer
+    def update(self, request, *args, **kwargs):
+        recipe = self.get_object()
+        data = request.data
+        data['author'] = request.user.id
+        serializer = RecipeSerializer(recipe, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

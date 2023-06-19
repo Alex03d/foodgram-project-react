@@ -68,11 +68,11 @@ class RecipeTag(models.Model):
 
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
-        Recipe, related_name='recipeingredient',
+        Recipe, related_name='recipeingredients',
         on_delete=models.CASCADE
     )
     ingredient = models.ForeignKey(
-        Ingredient, related_name='recipeingredient',
+        Ingredient,
         on_delete=models.CASCADE,
     )
     amount = models.IntegerField()
