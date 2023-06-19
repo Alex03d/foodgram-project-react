@@ -34,7 +34,7 @@ class Ingredient(models.Model):
 
 class Recipe(models.Model):
     name = models.CharField(max_length=200)
-    image = models.ImageField(
+    image = models.ImageFielпше d(
         upload_to='recipes/',
         blank=True
     )
