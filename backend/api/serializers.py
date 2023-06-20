@@ -2,9 +2,10 @@ import base64
 import uuid
 
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient
+from users.models import User
 
 
 class Base64ImageField(serializers.ImageField):
@@ -21,7 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.BooleanField(default=False)
 
     class Meta:
-        model = get_user_model()
+        model = User
         fields = ['email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed']
 
 
@@ -51,11 +52,14 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     """
     Сериализатор ингердиентов в рецепте
     """
-    id = serializers.ReadOnlyField(source='ingredient.id')
-    name = serializers.ReadOnlyField(source='ingredient.name')
-    measurement_unit = serializers.ReadOnlyField(
-        source='ingredient.measurement_unit'
-    )
+    id = serializers.IntegerField()
+    # id = serializers.ReadOnlyField(source='ingredient.id')
+    # amount = serializers.ReadOnlyField(source='ingredient.amount')
+
+    # name = serializers.ReadOnlyField(source='ingredient.name')
+    # measurement_unit = serializers.ReadOnlyField(
+    #     source='ingredient.measurement_unit'
+    # )
 
     # validators = (
     #     UniqueTogetherValidator(
@@ -66,10 +70,11 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RecipeIngredient
-        fields = ('id', 'name', 'measurement_unit', 'amount')
+        fields = ('id', 'amount')
 
     def __str__(self):
         return f'{self.ingredient} in {self.recipe}'
+
 
 class RecipeSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
@@ -102,32 +107,48 @@ class RecipeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         try:
             tags_data = validated_data.pop('tags')
-            ingredients_data = validated_data.pop('ingredients')
+            ingredients_data = validated_data.pop('recipeingredients')
         except KeyError as e:
             raise serializers.ValidationError(
                 f"Отсутствуют необходимые данные: {str(e)}"
             )
 
-        recipe = Recipe.objects.create(**validated_data)
+        # Check if 'request' is in context and get the user
+        # user = self.context['request'].user if 'request' in self.context else None
+        # user = self.context['request'].user if 'request' in self.context and self.context[
+        #     'request'].user.is_authenticated else None
+        user = self.context['request'].user if 'request' in self.context and self.context[
+            'request'].user.is_authenticated else None
+        print(user)
 
-        for tag_id in tags_data:
-            tag = Tag.objects.get(id=tag_id)
+        # If there's no user in the request or user is not authenticated,
+        # raise a validation error
+        if not user or not user.is_authenticated:
+            raise serializers.ValidationError("Authentication is fucking required to create a recipe.")
+
+        recipe = Recipe.objects.create(author=user, **validated_data)
+
+        # for tag_id in tags_data:
+        #     tag = Tag.objects.get(id=tag_id)
+        #     recipe.tags.add(tag)
+        for tag in tags_data:
             recipe.tags.add(tag)
 
         for ingredient_data in ingredients_data:
+            print(ingredient_data)
             RecipeIngredient.objects.create(
                 recipe=recipe,
+                # ingredient=Ingredient.objects.get(
+                #     id=ingredient_data['ingredient']['id']
+                # ),
                 ingredient=Ingredient.objects.get(
-                    id=ingredient_data['ingredient']['id']
+                    id=ingredient_data['id']
                 ),
                 amount=ingredient_data['amount']
             )
 
         recipe.save()
         return recipe
-
-
-
 
     # def create(self, validated_data):
     #     tags_data = validated_data.pop('tags')

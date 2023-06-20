@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from .models import (Recipe, Ingredient, Tag,
                      RecipeIngredient, Subscription, Favorite,
                      ShoppingList, RecipeTag)
+from users.models import User
 
 
 class RecipeIngredientInline(admin.TabularInline):
@@ -51,6 +52,6 @@ admin.site.register(ShoppingList)
 admin.site.register(RecipeTag)
 
 # unregister the old UserAdmin and register the new UserAdmin
-User = get_user_model()
-admin.site.unregister(User)
+
+# admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
