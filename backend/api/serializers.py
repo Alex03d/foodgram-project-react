@@ -2,7 +2,6 @@ import base64
 import uuid
 
 from rest_framework import serializers
-# from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient
 from users.models import User
@@ -39,34 +38,8 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'measurement_unit']
 
 
-# class RecipeIngredientSerializer(serializers.ModelSerializer):
-#     id = serializers.IntegerField(source='ingredient.id')
-#     amount = serializers.IntegerField()
-#
-#     class Meta:
-#         model = RecipeIngredient
-#         fields = ['id', 'amount']
-
-
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор ингердиентов в рецепте
-    """
     id = serializers.IntegerField()
-    # id = serializers.ReadOnlyField(source='ingredient.id')
-    # amount = serializers.ReadOnlyField(source='ingredient.amount')
-
-    # name = serializers.ReadOnlyField(source='ingredient.name')
-    # measurement_unit = serializers.ReadOnlyField(
-    #     source='ingredient.measurement_unit'
-    # )
-
-    # validators = (
-    #     UniqueTogetherValidator(
-    #         queryset=IngredientInRecipe.objects.all(),
-    #         fields=('ingredient', 'recipe')
-    #     ),
-    # )
 
     class Meta:
         model = RecipeIngredient
@@ -74,6 +47,34 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
     def __str__(self):
         return f'{self.ingredient} in {self.recipe}'
+
+# class RecipeIngredientSerializer(serializers.ModelSerializer):
+#     id = serializers.IntegerField(source='ingredient.id')
+#     amount = serializers.IntegerField()
+#
+#     class Meta:
+#         model = RecipeIngredient
+#         fields = ('id', 'amount',)
+#
+#     def validate_id(self, value):
+#         if not Ingredient.objects.filter(id=value).exists():
+#             raise serializers.ValidationError('Ингредиент не существует')
+#         return value
+#
+#     def create(self, validated_data):
+#         ingredient_id = validated_data['ingredient']['id']
+#         ingredient = Ingredient.objects.get(id=ingredient_id)
+#         amount = validated_data['amount']
+#         return RecipeIngredient.objects.create(ingredient=ingredient, amount=amount)
+#
+#     def update(self, instance, validated_data):
+#         if 'ingredient' in validated_data:
+#             ingredient_id = validated_data['ingredient']['id']
+#             instance.ingredient = Ingredient.objects.get(id=ingredient_id)
+#         if 'amount' in validated_data:
+#             instance.amount = validated_data['amount']
+#         instance.save()
+#         return instance
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -86,6 +87,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         many=True,
         source='recipeingredients'
     )
+    # ingredients = RecipeIngredientSerializer(
+    #     many=True,
+    #     source='ingredients'
+    # )
     image = Base64ImageField(
         max_length=None, use_url=True,
     )
@@ -95,8 +100,6 @@ class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = '__all__'
-        # fields = ['id', 'tags', 'author', 'ingredients', 'is_favorited',
-        #           'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time']
 
     def get_is_favorited(self, obj):
         pass
@@ -113,24 +116,15 @@ class RecipeSerializer(serializers.ModelSerializer):
                 f"Отсутствуют необходимые данные: {str(e)}"
             )
 
-        # Check if 'request' is in context and get the user
-        # user = self.context['request'].user if 'request' in self.context else None
-        # user = self.context['request'].user if 'request' in self.context and self.context[
-        #     'request'].user.is_authenticated else None
         user = self.context['request'].user if 'request' in self.context and self.context[
             'request'].user.is_authenticated else None
         print(user)
 
-        # If there's no user in the request or user is not authenticated,
-        # raise a validation error
         if not user or not user.is_authenticated:
             raise serializers.ValidationError("Authentication is fucking required to create a recipe.")
 
         recipe = Recipe.objects.create(author=user, **validated_data)
 
-        # for tag_id in tags_data:
-        #     tag = Tag.objects.get(id=tag_id)
-        #     recipe.tags.add(tag)
         for tag in tags_data:
             recipe.tags.add(tag)
 
@@ -138,9 +132,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             print(ingredient_data)
             RecipeIngredient.objects.create(
                 recipe=recipe,
-                # ingredient=Ingredient.objects.get(
-                #     id=ingredient_data['ingredient']['id']
-                # ),
                 ingredient=Ingredient.objects.get(
                     id=ingredient_data['id']
                 ),
@@ -150,20 +141,26 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe.save()
         return recipe
 
-    # def create(self, validated_data):
-    #     tags_data = validated_data.pop('tags')
-    #     ingredients_data = validated_data.pop('ingredients')
-    #     recipe = Recipe.objects.create(**validated_data)
-    #     for tag_id in tags_data:
-    #         tag = Tag.objects.get(id=tag_id)
-    #         recipe.tags.add(tag)
-    #     for ingredient_data in ingredients_data:
-    #         RecipeIngredient.objects.create(
-    #             recipe=recipe,
-    #             ingredient=Ingredient.objects.get(
-    #                 id=ingredient_data['ingredient']['id']
-    #             ),
-    #             amount=ingredient_data['amount']
-    #         )
-    #     recipe.save()
-    #     return recipe
+    def update(self, instance, validated_data):
+        ingredients_data = validated_data.pop('recipeingredients')
+        tags_data = validated_data.pop('tags')
+
+        Recipe.objects.filter(id=instance.id).update(**validated_data)
+
+        instance.recipeingredients.all().delete()
+
+        for ingredient_data in ingredients_data:
+            RecipeIngredient.objects.create(recipe=instance, **ingredient_data)
+
+        instance.tags.clear()
+        for tag in tags_data:
+            instance.tags.add(tag.id)  # Заменил tag_data на tag.id
+
+        return instance
+
+
+
+
+
+
+
