@@ -48,34 +48,6 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     def __str__(self):
         return f'{self.ingredient} in {self.recipe}'
 
-# class RecipeIngredientSerializer(serializers.ModelSerializer):
-#     id = serializers.IntegerField(source='ingredient.id')
-#     amount = serializers.IntegerField()
-#
-#     class Meta:
-#         model = RecipeIngredient
-#         fields = ('id', 'amount',)
-#
-#     def validate_id(self, value):
-#         if not Ingredient.objects.filter(id=value).exists():
-#             raise serializers.ValidationError('Ингредиент не существует')
-#         return value
-#
-#     def create(self, validated_data):
-#         ingredient_id = validated_data['ingredient']['id']
-#         ingredient = Ingredient.objects.get(id=ingredient_id)
-#         amount = validated_data['amount']
-#         return RecipeIngredient.objects.create(ingredient=ingredient, amount=amount)
-#
-#     def update(self, instance, validated_data):
-#         if 'ingredient' in validated_data:
-#             ingredient_id = validated_data['ingredient']['id']
-#             instance.ingredient = Ingredient.objects.get(id=ingredient_id)
-#         if 'amount' in validated_data:
-#             instance.amount = validated_data['amount']
-#         instance.save()
-#         return instance
-
 
 class RecipeSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
@@ -150,7 +122,12 @@ class RecipeSerializer(serializers.ModelSerializer):
         instance.recipeingredients.all().delete()
 
         for ingredient_data in ingredients_data:
-            RecipeIngredient.objects.create(recipe=instance, **ingredient_data)
+            # RecipeIngredient.objects.create(recipe=instance, **ingredient_data)
+            RecipeIngredient.objects.create(
+                recipe=instance,
+                ingredient=Ingredient.objects.get(id=ingredient_data['id']),
+                amount=ingredient_data['amount']
+            )
 
         instance.tags.clear()
         for tag in tags_data:
