@@ -84,3 +84,39 @@ def test_delete_recipe(db, test_user, test_recipe, api_client):
     api_client.force_authenticate(user=test_user)
     response = api_client.delete(f'/api/recipes/{test_recipe.id}/')
     assert response.status_code == 204
+
+
+def test_add_to_shopping_cart(db, test_user, test_recipe, api_client):
+    api_client.force_authenticate(user=test_user)
+    response = api_client.post(f'/api/recipes/{test_recipe.id}/shopping_cart/')
+    assert response.status_code == 201
+
+
+def test_remove_from_shopping_cart(db, test_user, test_recipe, api_client):
+    # сначала добавим рецепт в список покупок
+    api_client.force_authenticate(user=test_user)
+    api_client.post(f'/api/recipes/{test_recipe.id}/shopping_cart/')
+    # теперь удалим его
+    response = api_client.delete(f'/api/recipes/{test_recipe.id}/shopping_cart/')
+    assert response.status_code == 204
+
+
+def test_download_shopping_cart(db, test_user, test_recipe, api_client):
+    # Добавляем ингредиент в рецепт при его создании
+    test_ingredient = Ingredient.objects.create(name="Test ingredient", measurement_unit="g")
+    RecipeIngredient.objects.create(recipe=test_recipe, ingredient=test_ingredient, amount=10)
+
+    # Сначала добавляем рецепт в список покупок
+    api_client.force_authenticate(user=test_user)
+    response = api_client.post(f'/api/recipes/{test_recipe.id}/shopping_cart/')
+
+    # Проверяем, успешно ли был добавлен рецепт
+    assert response.status_code == 201, 'Adding to shopping cart failed'
+
+    # Теперь скачиваем список
+    response = api_client.get('/api/recipes/download_shopping_cart/')
+
+    assert response.status_code == 200, 'Downloading shopping cart failed'
+
+    # Проверяем содержимое файла, которое может зависеть от вашей реализации
+    assert 'Test ingredient - 10 g' in str(response.content), 'The ingredient list is incorrect'

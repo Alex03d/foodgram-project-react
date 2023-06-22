@@ -59,10 +59,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         many=True,
         source='recipeingredients'
     )
-    # ingredients = RecipeIngredientSerializer(
-    #     many=True,
-    #     source='ingredients'
-    # )
     image = Base64ImageField(
         max_length=None, use_url=True,
     )
@@ -122,7 +118,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         instance.recipeingredients.all().delete()
 
         for ingredient_data in ingredients_data:
-            # RecipeIngredient.objects.create(recipe=instance, **ingredient_data)
             RecipeIngredient.objects.create(
                 recipe=instance,
                 ingredient=Ingredient.objects.get(id=ingredient_data['id']),
@@ -131,13 +126,6 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         instance.tags.clear()
         for tag in tags_data:
-            instance.tags.add(tag.id)  # Заменил tag_data на tag.id
+            instance.tags.add(tag.id)
 
         return instance
-
-
-
-
-
-
-
