@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingList, Tag
-from .serializers import RecipeSerializer
+from .serializers import RecipeSerializer, TagSerializer
 
 
 class ShoppingListManipulation(views.APIView):
@@ -77,3 +77,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             response.write(line)
 
         return response
+
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+
