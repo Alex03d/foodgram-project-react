@@ -5,8 +5,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingList, Tag
-from .serializers import RecipeSerializer, TagSerializer
+from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingList, Tag, Favorite
+from .serializers import RecipeSerializer, TagSerializer, RecipeShortSerializer
 
 
 class ShoppingListManipulation(views.APIView):
@@ -78,7 +78,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return response
 
+    @action(detail=True, methods=['post', 'delete'])
+    def favorite(self, request, pk=None):
+        recipe = self.get_object()
+        user = request.user
+        favorite = Favorite.objects.filter(user=user, recipe=recipe)
+
+        if request.method == 'POST':
+            if favorite.exists():
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            else:
+                Favorite.objects.create(user=user, recipe=recipe)
+                serializer = RecipeShortSerializer(recipe)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        elif request.method == 'DELETE':
+            if favorite.exists():
+                favorite.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response({"detail": "Recipe not in favorites."}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-
