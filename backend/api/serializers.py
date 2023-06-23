@@ -3,7 +3,7 @@ import uuid
 
 from rest_framework import serializers
 from django.core.files.base import ContentFile
-from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient
+from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient, Subscription
 from users.models import User
 
 
@@ -17,12 +17,12 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
 
-class UserSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.BooleanField(default=False)
-
-    class Meta:
-        model = User
-        fields = ['email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed']
+# class UserSerializer(serializers.ModelSerializer):
+#     is_subscribed = serializers.BooleanField(default=False)
+#
+#     class Meta:
+#         model = User
+#         fields = ['email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed']
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -47,6 +47,33 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
     def __str__(self):
         return f'{self.ingredient} in {self.recipe}'
+
+
+class RecipeShortSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField()
+
+    class Meta:
+        model = Recipe
+        fields = ['id', 'name', 'image', 'cooking_time']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = RecipeShortSerializer(source='recipes_authored', many=True, read_only=True)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed', 'recipes', 'recipes_count']
+
+    def get_is_subscribed(self, obj):
+        user = self.context.get('request').user if 'request' in self.context else None
+        if user and user.is_authenticated:
+            return Subscription.objects.filter(user=user, author=obj).exists()
+        return False
+
+    def get_recipes_count(self, obj):
+        return obj.recipes_authored.count()
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -129,9 +156,3 @@ class RecipeSerializer(serializers.ModelSerializer):
             instance.tags.add(tag.id)
 
         return instance
-
-
-class RecipeShortSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Recipe
-        fields = ['id', 'name', 'image', 'cooking_time']

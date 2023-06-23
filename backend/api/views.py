@@ -5,8 +5,28 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingList, Tag, Favorite
-from .serializers import RecipeSerializer, TagSerializer, RecipeShortSerializer
+from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingList, Tag, Favorite, Subscription
+from users.models import User
+from .serializers import RecipeSerializer, TagSerializer, RecipeShortSerializer, UserSerializer
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    @action(detail=True, methods=['post'])
+    def subscribe(self, request, pk=None):
+        user = self.get_object()
+        subscriber = request.user
+        if user != subscriber:
+            subscription, created = Subscription.objects.get_or_create(user=subscriber, author=user)
+            if created:
+                serializer = UserSerializer(user, context={'request': request})
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"detail": "Already subscribed."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"detail": "You cannot subscribe to yourself."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ShoppingListManipulation(views.APIView):

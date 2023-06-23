@@ -43,7 +43,7 @@ class Recipe(models.Model):
     cooking_time = models.PositiveSmallIntegerField(default=0)
     text = models.TextField()
     ingredients = models.ManyToManyField(Ingredient, through='RecipeIngredient')
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recipes_authored')
     pub_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
