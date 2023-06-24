@@ -2,31 +2,62 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from rest_framework import mixins, status, viewsets, views
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingList, Tag, Favorite, Subscription
 from users.models import User
-from .serializers import RecipeSerializer, TagSerializer, RecipeShortSerializer, UserSerializer
+from .serializers import RecipeSerializer, TagSerializer, RecipeShortSerializer, UserSerializer, SubscriptionSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post', 'delete'], permission_classes=(IsAuthenticated,))
     def subscribe(self, request, pk=None):
         user = self.get_object()
         subscriber = request.user
         if user != subscriber:
-            subscription, created = Subscription.objects.get_or_create(user=subscriber, author=user)
-            if created:
-                serializer = UserSerializer(user, context={'request': request})
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            else:
-                return Response({"detail": "Already subscribed."}, status=status.HTTP_400_BAD_REQUEST)
+            if request.method == 'POST':
+                subscription, created = Subscription.objects.get_or_create(user=subscriber, author=user)
+                if created:
+                    serializer = UserSerializer(user, context={'request': request})
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({"detail": "Already subscribed."}, status=status.HTTP_400_BAD_REQUEST)
+            elif request.method == 'DELETE':
+                try:
+                    subscription = Subscription.objects.get(user=subscriber, author=user)
+                    subscription.delete()
+                    return Response(status=status.HTTP_204_NO_CONTENT)
+                except Subscription.DoesNotExist:
+                    return Response({"detail": "Subscription does not exist."}, status=status.HTTP_404_NOT_FOUND)
         else:
-            return Response({"detail": "You cannot subscribe to yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Though cannot subscribe to yourself."}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["GET"], permission_classes=(IsAuthenticated,))
+    def subscriptions(self, request):
+        print('Getting subscriptions for', request.user)
+        subscriptions = Subscription.objects.filter(user=request.user)
+        print('Subscriptions:', subscriptions)
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        result_page = paginator.paginate_queryset(subscriptions, request)
+        serializer = SubscriptionSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    # @action(detail=True, methods=['delete'], permission_classes=(IsAuthenticated,))
+    # def unsubscribe(self, request, pk=None):
+    #     user = self.get_object()
+    #     subscriber = request.user
+    #     try:
+    #         subscription = Subscription.objects.get(user=subscriber, author=user)
+    #         subscription.delete()
+    #         return Response(status=status.HTTP_204_NO_CONTENT)
+    #     except Subscription.DoesNotExist:
+    #         return Response({"detail": "Subscription does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
 
 class ShoppingListManipulation(views.APIView):
