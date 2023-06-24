@@ -2,13 +2,16 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from rest_framework import mixins, status, viewsets, views
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingList, Tag, Favorite, Subscription
 from users.models import User
-from .serializers import RecipeSerializer, TagSerializer, RecipeShortSerializer, UserSerializer, SubscriptionSerializer
+from .serializers import (RecipeSerializer, TagSerializer,
+                          RecipeShortSerializer, UserSerializer,
+                          SubscriptionSerializer, IngredientSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -153,3 +156,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+
+
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ['name']

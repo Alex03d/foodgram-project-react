@@ -2,7 +2,7 @@ from django.urls import include, path
 # from djoser.views import UserViewSet
 from rest_framework.routers import DefaultRouter
 
-from .views import RecipeViewSet, ShoppingListManipulation, TagViewSet
+from .views import RecipeViewSet, ShoppingListManipulation, TagViewSet, IngredientViewSet
 from .views import UserViewSet as CustomUserViewSet
 
 
@@ -13,6 +13,7 @@ router.register(r'recipes', RecipeViewSet, basename='recipe')
 # router.register(r'users', UserViewSet, basename='user')
 router.register(r'tags', TagViewSet, basename='tag')
 router.register(r'users', CustomUserViewSet, basename='user')
+router.register(r'ingredients', IngredientViewSet, basename='ingredient')
 
 
 urlpatterns = [
