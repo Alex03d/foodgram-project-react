@@ -154,9 +154,40 @@ class RecipeSerializer(serializers.ModelSerializer):
         return instance
 
 
+# class SubscriptionSerializer(serializers.ModelSerializer):
+#     author = UserSerializer(read_only=True)
+#
+#     class Meta:
+#         model = Subscription
+#         fields = ['author']
+
+class SubscriptionUserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = RecipeShortSerializer(source='recipes_authored', many=True, read_only=True)
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed', 'recipes', 'recipes_count']
+
+    def get_is_subscribed(self, obj):
+        user = self.context.get('request').user if 'request' in self.context else None
+        if user and user.is_authenticated:
+            return Subscription.objects.filter(user=user, author=obj).exists()
+        return False
+
+    def get_recipes_count(self, obj):
+        return obj.recipes_authored.count()
+
+
 class SubscriptionSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+    author = SubscriptionUserSerializer(read_only=True)
 
     class Meta:
         model = Subscription
         fields = ['author']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        author_representation = representation.pop('author')
+        return {**representation, **author_representation}

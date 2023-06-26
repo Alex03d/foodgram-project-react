@@ -62,6 +62,11 @@ class UserViewSet(viewsets.ModelViewSet):
     #     except Subscription.DoesNotExist:
     #         return Response({"detail": "Subscription does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
+    @action(detail=False, methods=["GET"], permission_classes=(IsAuthenticated,))
+    def me(self, request):
+        serializer = UserSerializer(request.user, context={'request': request})
+        return Response(serializer.data)
+
 
 class ShoppingListManipulation(views.APIView):
     permission_classes = [IsAuthenticated]
