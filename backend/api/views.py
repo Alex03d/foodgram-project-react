@@ -1,8 +1,9 @@
 from django.db.models import Sum
 from django.http import HttpResponse
-from rest_framework import mixins, status, viewsets, views
+from rest_framework import mixins, status, viewsets, views, permissions
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
+
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -12,6 +13,9 @@ from users.models import User
 from .serializers import (RecipeSerializer, TagSerializer,
                           RecipeShortSerializer, UserSerializer,
                           SubscriptionSerializer, IngredientSerializer)
+from .filters import IngredientFilter, RecipeFilter
+from .permissions import IsOwnerOrReadOnly
+from .paginations import CustomPagination
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -51,17 +55,6 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = SubscriptionSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-    # @action(detail=True, methods=['delete'], permission_classes=(IsAuthenticated,))
-    # def unsubscribe(self, request, pk=None):
-    #     user = self.get_object()
-    #     subscriber = request.user
-    #     try:
-    #         subscription = Subscription.objects.get(user=subscriber, author=user)
-    #         subscription.delete()
-    #         return Response(status=status.HTTP_204_NO_CONTENT)
-    #     except Subscription.DoesNotExist:
-    #         return Response({"detail": "Subscription does not exist."}, status=status.HTTP_404_NOT_FOUND)
-
     @action(detail=False, methods=["GET"], permission_classes=(IsAuthenticated,))
     def me(self, request):
         serializer = UserSerializer(request.user, context={'request': request})
@@ -89,6 +82,10 @@ class ShoppingListManipulation(views.APIView):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
+    pagination_class = CustomPagination
+    permission_classes = (IsOwnerOrReadOnly,)
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -158,13 +155,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 return Response({"detail": "Recipe not in favorites."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class TagViewSet(viewsets.ModelViewSet):
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
+    """Вьюсет для  тегов: ReadOnly."""
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (permissions.AllowAny, )
+    pagination_class = None
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    """Вьюсет для  рецептов: ReadOnly."""
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    filter_backends = [SearchFilter]
-    search_fields = ['name']
+    permission_classes = (permissions.AllowAny, )
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
+    pagination_class = None
