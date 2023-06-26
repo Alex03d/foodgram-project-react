@@ -8,7 +8,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import Ingredient, Recipe, RecipeIngredient, ShoppingList, Tag, Favorite, Subscription
+from recipes.models import (Ingredient, Recipe, RecipeIngredient,
+                            ShoppingList, Tag, Favorite, Subscription)
 from users.models import User
 from .serializers import (RecipeSerializer, TagSerializer,
                           RecipeShortSerializer, UserSerializer,
@@ -22,29 +23,55 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    @action(detail=True, methods=['post', 'delete'], permission_classes=(IsAuthenticated,))
+    @action(detail=True, methods=['post', 'delete'],
+            permission_classes=(IsAuthenticated,))
     def subscribe(self, request, pk=None):
         user = self.get_object()
         subscriber = request.user
         if user != subscriber:
             if request.method == 'POST':
-                subscription, created = Subscription.objects.get_or_create(user=subscriber, author=user)
+                subscription, created = Subscription.objects.get_or_create(
+                    user=subscriber,
+                    author=user
+                )
                 if created:
-                    serializer = UserSerializer(user, context={'request': request})
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    serializer = UserSerializer(
+                        user,
+                        context={'request': request}
+                    )
+                    return Response(
+                        serializer.data,
+                        status=status.HTTP_201_CREATED
+                    )
                 else:
-                    return Response({"detail": "Already subscribed."}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response(
+                        {"detail": "Already subscribed."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
             elif request.method == 'DELETE':
                 try:
-                    subscription = Subscription.objects.get(user=subscriber, author=user)
+                    subscription = Subscription.objects.get(
+                        user=subscriber,
+                        author=user
+                    )
                     subscription.delete()
                     return Response(status=status.HTTP_204_NO_CONTENT)
                 except Subscription.DoesNotExist:
-                    return Response({"detail": "Subscription does not exist."}, status=status.HTTP_404_NOT_FOUND)
+                    return Response(
+                        {"detail": "Subscription does not exist."},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
         else:
-            return Response({"detail": "Though cannot subscribe to yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Though cannot subscribe to yourself."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-    @action(detail=False, methods=["GET"], permission_classes=(IsAuthenticated,))
+    @action(
+        detail=False,
+        methods=["GET"],
+        permission_classes=(IsAuthenticated,)
+    )
     def subscriptions(self, request):
         print('Getting subscriptions for', request.user)
         subscriptions = Subscription.objects.filter(user=request.user)
@@ -55,7 +82,11 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = SubscriptionSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-    @action(detail=False, methods=["GET"], permission_classes=(IsAuthenticated,))
+    @action(
+        detail=False,
+        methods=["GET"],
+        permission_classes=(IsAuthenticated,)
+    )
     def me(self, request):
         serializer = UserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
@@ -76,7 +107,10 @@ class ShoppingListManipulation(views.APIView):
         if item.exists():
             item.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({"detail": "Recipe not in shopping list."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "Recipe not in shopping list."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -94,7 +128,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         data = request.data
-        serializer = RecipeSerializer(data=data, context={'request': request})  # Добавлен контекст
+        serializer = RecipeSerializer(
+            data=data,
+            context={'request': request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -103,15 +140,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         recipe = self.get_object()
         data = request.data
-        serializer = RecipeSerializer(recipe, data=data, context={'request': request})  # Добавлен контекст
+        serializer = RecipeSerializer(
+            recipe,
+            data=data,
+            context={'request': request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=["GET"], permission_classes=(IsAuthenticated,), pagination_class=None)
+    @action(detail=False, methods=["GET"],
+            permission_classes=(IsAuthenticated,),
+            pagination_class=None)
     def download_shopping_cart(self, request):
-        shopping_list_recipes = ShoppingList.objects.filter(user=request.user).values_list('recipe', flat=True)
+        shopping_list_recipes = ShoppingList.objects.filter(
+            user=request.user).values_list('recipe', flat=True
+                                           )
         ingredients = RecipeIngredient.objects.filter(
             recipe__in=shopping_list_recipes
         ).values(
@@ -126,10 +171,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def convert_txt(ingredients):
         """Конвертирует список ингредиентов в текстовый файл"""
         response = HttpResponse(content_type='text/plain')
-        response['Content-Disposition'] = 'attachment; filename="ingredients.txt"'
+        response['Content-Disposition'] = 'attachment; ' \
+                                          'filename="ingredients.txt"'
 
         for ingredient in ingredients:
-            line = f"{ingredient['ingredient__name']} - {ingredient['ingredient_total']} {ingredient['ingredient__measurement_unit']}\n"
+            line = f"{ingredient['ingredient__name']} - " \
+                   f"{ingredient['ingredient_total']} " \
+                   f"{ingredient['ingredient__measurement_unit']}\n"
             response.write(line)
 
         return response
@@ -146,13 +194,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
             else:
                 Favorite.objects.create(user=user, recipe=recipe)
                 serializer = RecipeShortSerializer(recipe)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
         elif request.method == 'DELETE':
             if favorite.exists():
                 favorite.delete()
                 return Response(status=status.HTTP_204_NO_CONTENT)
             else:
-                return Response({"detail": "Recipe not in favorites."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "Recipe not in favorites."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.contrib.auth import get_user_model
 from .models import (Recipe, Ingredient, Tag,
                      RecipeIngredient, Subscription, Favorite,
                      ShoppingList, RecipeTag)
@@ -51,7 +50,4 @@ admin.site.register(Favorite)
 admin.site.register(ShoppingList)
 admin.site.register(RecipeTag)
 
-# unregister the old UserAdmin and register the new UserAdmin
-
-# admin.site.unregister(User)
 admin.site.register(User, UserAdmin)

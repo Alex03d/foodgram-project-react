@@ -1,7 +1,8 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import RecipeViewSet, ShoppingListManipulation, TagViewSet, IngredientViewSet
+from .views import (RecipeViewSet, ShoppingListManipulation,
+                    TagViewSet, IngredientViewSet)
 from .views import UserViewSet as CustomUserViewSet
 
 
@@ -18,5 +19,6 @@ urlpatterns = [
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.authtoken')),
     path('', include(router.urls)),
-    path('recipes/<int:id>/shopping_cart/', ShoppingListManipulation.as_view()),
+    path('recipes/<int:id>/shopping_cart/',
+         ShoppingListManipulation.as_view()),
 ]

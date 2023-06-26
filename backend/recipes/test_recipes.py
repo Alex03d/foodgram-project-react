@@ -1,7 +1,8 @@
 import pytest
 from rest_framework.test import APIClient
 from users.models import User
-from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient, Subscription
+from recipes.models import (Recipe, Tag, Ingredient,
+                            RecipeIngredient, Subscription)
 
 
 @pytest.fixture
@@ -71,7 +72,9 @@ def test_tag(db):
     return Tag.objects.create(name='Test tag', color='123456', slug='test')
 
 
-def test_create_recipe(db, test_user, test_recipe, test_ingredient, test_tag, api_client):
+def test_create_recipe(db, test_user, test_recipe,
+                       test_ingredient, test_tag, api_client
+                       ):
     api_client.force_authenticate(user=test_user)
     response = api_client.post('/api/recipes/', {
         'name': 'Test recipe',
@@ -79,12 +82,17 @@ def test_create_recipe(db, test_user, test_recipe, test_ingredient, test_tag, ap
         'cooking_time': 1,
         'ingredients': [{'id': test_ingredient.id, 'amount': 10}],
         'tags': [test_tag.id],
-        'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg=='
+        'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA'
+                 'EAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAA'
+                 'ACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCB'
+                 'yxOyYQAAAABJRU5ErkJggg=='
     }, format='json')
     assert response.status_code == 201
 
 
-def test_update_recipe(db, test_user, test_recipe, test_ingredient, test_tag, api_client):
+def test_update_recipe(db, test_user, test_recipe, test_ingredient,
+                       test_tag, api_client
+                       ):
     api_client.force_authenticate(user=test_user)
     response = api_client.patch(f'/api/recipes/{test_recipe.id}/', {
         'name': 'Updated name',
@@ -92,7 +100,9 @@ def test_update_recipe(db, test_user, test_recipe, test_ingredient, test_tag, ap
         'cooking_time': 1,
         'ingredients': [{'id': test_ingredient.id, 'amount': 10}],
         'tags': [test_tag.id],
-        'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg=='
+        'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAA'
+                 'ABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGV'
+                 'Kw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg=='
     }, format='json')
     assert response.status_code == 200
 
@@ -112,13 +122,22 @@ def test_add_to_shopping_cart(db, test_user, test_recipe, api_client):
 def test_remove_from_shopping_cart(db, test_user, test_recipe, api_client):
     api_client.force_authenticate(user=test_user)
     api_client.post(f'/api/recipes/{test_recipe.id}/shopping_cart/')
-    response = api_client.delete(f'/api/recipes/{test_recipe.id}/shopping_cart/')
+    response = api_client.delete(
+        f'/api/recipes/{test_recipe.id}/shopping_cart/'
+    )
     assert response.status_code == 204
 
 
 def test_download_shopping_cart(db, test_user, test_recipe, api_client):
-    test_ingredient = Ingredient.objects.create(name="Test ingredient", measurement_unit="g")
-    RecipeIngredient.objects.create(recipe=test_recipe, ingredient=test_ingredient, amount=10)
+    test_ingredient = Ingredient.objects.create(
+        name="Test ingredient",
+        measurement_unit="g"
+    )
+    RecipeIngredient.objects.create(
+        recipe=test_recipe,
+        ingredient=test_ingredient,
+        amount=10
+    )
 
     api_client.force_authenticate(user=test_user)
     response = api_client.post(f'/api/recipes/{test_recipe.id}/shopping_cart/')
@@ -129,7 +148,8 @@ def test_download_shopping_cart(db, test_user, test_recipe, api_client):
 
     assert response.status_code == 200, 'Downloading shopping cart failed'
 
-    assert 'Test ingredient - 10 g' in str(response.content), 'The ingredient list is incorrect'
+    assert 'Test ingredient - 10 g' in str(response.content), \
+        'The ingredient list is incorrect'
 
 
 def test_shopping_list(db, test_user, test_recipe, api_client):
@@ -145,34 +165,44 @@ def test_get_ingredients(db, test_ingredients, api_client):
 
 
 def test_get_specific_ingredient(db, test_ingredients, api_client):
-    ingredient_id = test_ingredients[0].id  # Получаем id первого ингредиента из списка
+    ingredient_id = test_ingredients[0].id
     response = api_client.get(f'/api/ingredients/{ingredient_id}/')
     assert response.status_code == 200
-    assert response.data['id'] == ingredient_id  # Проверяем, что в ответе получен нужный ингредиент
+    assert response.data['id'] == ingredient_id
 
 
 def test_get_tags(db, test_tags, api_client):
     response = api_client.get('/api/tags/')
     print(response.data)
     assert response.status_code == 200
-    assert all(tag.name in [data['name'] for data in response.data] for tag in test_tags)
+    assert all(
+        tag.name in (data['name'] for data in response.data)
+        for tag in test_tags
+    )
 
 
 @pytest.fixture
 def test_subscription(db, test_user, create_user):
-    another_user = create_user(email='another_user@test.com', password='test_password')
+    another_user = create_user(
+        email='another_user@test.com',
+        password='test_password'
+    )
     return Subscription.objects.create(user=test_user, author=another_user)
 
 
 def test_subscribe(db, test_user, test_subscription, api_client):
     api_client.force_authenticate(user=test_user)
-    response = api_client.post(f'/api/users/{test_subscription.author.id}/subscribe/')
+    response = api_client.post(
+        f'/api/users/{test_subscription.author.id}/subscribe/'
+    )
     assert response.status_code == 400  # because already subscribed
 
 
 def test_unsubscribe(db, test_user, test_subscription, api_client):
     api_client.force_authenticate(user=test_user)
-    response = api_client.delete(f'/api/users/{test_subscription.author.id}/subscribe/')
+    response = api_client.delete(
+        f'/api/users/{test_subscription.author.id}/subscribe/'
+    )
     assert response.status_code == 204
 
 
