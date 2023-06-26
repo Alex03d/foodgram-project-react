@@ -17,8 +17,9 @@ class Base64ImageField(serializers.ImageField):
             id = uuid.uuid4()
             data = ContentFile(
                 base64.b64decode(imgstr),
-                name=id.urn[9:]+'.'+ext
+                name=id.urn[9:] + '.' + ext
             )
+
         return super().to_internal_value(data)
 
 

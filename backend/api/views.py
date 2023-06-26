@@ -1,11 +1,11 @@
 from django.db.models import Sum
 from django.http import HttpResponse
-from rest_framework import mixins, status, viewsets, views, permissions
+from rest_framework import status, viewsets, views, permissions
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import (Ingredient, Recipe, RecipeIngredient,
