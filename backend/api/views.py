@@ -154,11 +154,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             permission_classes=(IsAuthenticated,),
             pagination_class=None)
     def download_shopping_cart(self, request):
-        shopping_list_recipes = ShoppingList.objects.filter(
+        shopping_cart_recipes = ShoppingList.objects.filter(
             user=request.user).values_list('recipe', flat=True
                                            )
         ingredients = RecipeIngredient.objects.filter(
-            recipe__in=shopping_list_recipes
+            recipe__in=shopping_cart_recipes
         ).values(
             'ingredient__name', 'ingredient__measurement_unit'
         ).order_by(
