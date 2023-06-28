@@ -2,7 +2,7 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from users.models import User
+from users.models import User, Subscription
 
 
 class Tag(models.Model):
@@ -95,20 +95,6 @@ class RecipeIngredient(models.Model):
 
     def __str__(self):
         return f'{self.ingredient} - {self.amount}'
-
-
-class Subscription(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='follower')
-    author = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='followed')
-
-    def __str__(self):
-        return f'{self.user} follows {self.author}'
 
 
 class Favorite(models.Model):

@@ -1,9 +1,9 @@
 import pytest
 from rest_framework.test import APIClient
 
-from recipes.models import (Ingredient, Recipe, RecipeIngredient, Subscription,
+from recipes.models import (Ingredient, Recipe, RecipeIngredient,
                             Tag)
-from users.models import User
+from users.models import User, Subscription
 
 
 @pytest.fixture

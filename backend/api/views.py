@@ -8,9 +8,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingList, Subscription, Tag)
-from users.models import User
-
+                            ShoppingList, Tag)
+from users.models import User, Subscription
 from .filters import IngredientFilter, RecipeFilter
 from .paginations import CustomPagination
 from .permissions import IsOwnerOrReadOnly
@@ -161,15 +160,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def convert_txt(ingredients):
-        """Конвертирует список ингредиентов в текстовый файл"""
         response = HttpResponse(content_type='text/plain')
-        response['Content-Disposition'] = 'attachment; ' \
-                                          'filename="ingredients.txt"'
+        response['Content-Disposition'] = (
+            'attachment; filename="ingredients.txt"'
+        )
 
         for ingredient in ingredients:
-            line = f"{ingredient['ingredient__name']} - " \
-                   f"{ingredient['ingredient_total']} " \
-                   f"{ingredient['ingredient__measurement_unit']}\n"
+            line = (
+                f"{ingredient['ingredient__name']} - "
+                f"{ingredient['ingredient_total']} "
+                f"{ingredient['ingredient__measurement_unit']}\n"
+            )
             response.write(line)
 
         return response
