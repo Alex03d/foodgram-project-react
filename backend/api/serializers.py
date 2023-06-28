@@ -189,7 +189,11 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
 
         request = self.context.get('request')
-        user = request.user if request and request.user.is_authenticated else None
+        user = (
+            request.user
+            if request and request.user.is_authenticated
+            else None
+        )
 
         if not user or not user.is_authenticated:
             raise serializers.ValidationError("Authentication is  required.")
