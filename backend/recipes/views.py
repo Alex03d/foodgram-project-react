@@ -1,10 +1,11 @@
 from rest_framework import viewsets
-from .models import (Tag, Ingredient, Recipe, IngredientAmount,
-                     FavoriteRecipe, ShoppingList, Follow)
-from .serializers import (TagSerializer, IngredientSerializer,
-                          RecipeSerializer, IngredientAmountSerializer,
-                          FavoriteRecipeSerializer, ShoppingListSerializer,
-                          FollowSerializer)
+
+from .models import (FavoriteRecipe, Follow, Ingredient, IngredientAmount,
+                     Recipe, ShoppingList, Tag)
+from .serializers import (FavoriteRecipeSerializer, FollowSerializer,
+                          IngredientAmountSerializer, IngredientSerializer,
+                          RecipeSerializer, ShoppingListSerializer,
+                          TagSerializer)
 
 
 class TagViewSet(viewsets.ModelViewSet):

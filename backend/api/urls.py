@@ -1,10 +1,11 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import (RecipeViewSet, ShoppingListManipulation,
-                    TagViewSet, IngredientViewSet)
+from .views import (IngredientViewSet, RecipeViewSet, ShoppingListManipulation,
+                    TagViewSet)
 from .views import UserViewSet as CustomUserViewSet
-
 
 app_name = 'api'
 
@@ -22,3 +23,6 @@ urlpatterns = [
     path('recipes/<int:id>/shopping_cart/',
          ShoppingListManipulation.as_view()),
 ]
+
+if settings.DEBUG: # Если DEBUG режим включен
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

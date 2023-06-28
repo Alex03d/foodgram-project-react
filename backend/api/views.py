@@ -1,22 +1,22 @@
 from django.db.models import Sum
 from django.http import HttpResponse
-from rest_framework import status, viewsets, views, permissions
-from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
-
+from rest_framework import permissions, status, views, viewsets
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import (Ingredient, Recipe, RecipeIngredient,
-                            ShoppingList, Tag, Favorite, Subscription)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingList, Subscription, Tag)
 from users.models import User
-from .serializers import (RecipeSerializer, TagSerializer,
-                          RecipeShortSerializer, UserSerializer,
-                          SubscriptionSerializer, IngredientSerializer)
+
 from .filters import IngredientFilter, RecipeFilter
-from .permissions import IsOwnerOrReadOnly
 from .paginations import CustomPagination
+from .permissions import IsOwnerOrReadOnly
+from .serializers import (IngredientSerializer, RecipeSerializer,
+                          RecipeShortSerializer, SubscriptionSerializer,
+                          TagSerializer, UserSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -49,18 +49,12 @@ class UserViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_400_BAD_REQUEST
                     )
             elif request.method == 'DELETE':
-                try:
-                    subscription = Subscription.objects.get(
-                        user=subscriber,
-                        author=user
-                    )
-                    subscription.delete()
-                    return Response(status=status.HTTP_204_NO_CONTENT)
-                except Subscription.DoesNotExist:
-                    return Response(
-                        {"detail": "Subscription does not exist."},
-                        status=status.HTTP_404_NOT_FOUND
-                    )
+                subscription = Subscription.objects.get(
+                    user=subscriber,
+                    author=user
+                )
+                subscription.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(
                 {"detail": "Though cannot subscribe to yourself."},
@@ -73,9 +67,7 @@ class UserViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def subscriptions(self, request):
-        print('Getting subscriptions for', request.user)
         subscriptions = Subscription.objects.filter(user=request.user)
-        print('Subscriptions:', subscriptions)
         paginator = PageNumberPagination()
         paginator.page_size = 10
         result_page = paginator.paginate_queryset(subscriptions, request)

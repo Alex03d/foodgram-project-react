@@ -1,11 +1,12 @@
 import base64
 import uuid
-import webcolors
 
-from rest_framework import serializers
+import webcolors
 from django.core.files.base import ContentFile
-from recipes.models import (Recipe, Tag, Ingredient, RecipeIngredient,
-                            Subscription, Favorite, ShoppingList)
+from rest_framework import serializers
+
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingList, Subscription, Tag)
 from users.models import User
 
 
@@ -91,8 +92,8 @@ class UserSerializer(serializers.ModelSerializer):
                   'recipes_count', 'subscriptions_count']
 
     def get_is_subscribed(self, obj):
-        user = self.context.get('request').user \
-            if 'request' in self.context else None
+        request = self.context.get('request')
+        user = request.user if request else None
         if user and user.is_authenticated:
             return Subscription.objects.filter(user=user, author=obj).exists()
         return False
@@ -113,8 +114,8 @@ class AuthorSerializer(serializers.ModelSerializer):
                   'last_name', 'is_subscribed']
 
     def get_is_subscribed(self, obj):
-        user = self.context.get('request').user \
-            if 'request' in self.context else None
+        request = self.context.get('request')
+        user = request.user if request else None
         if user and user.is_authenticated:
             return Subscription.objects.filter(user=user, author=obj).exists()
         return False
@@ -138,15 +139,15 @@ class RecipeListSerializer(serializers.ModelSerializer):
                   'cooking_time', 'text']
 
     def get_is_favorited(self, obj):
-        user = self.context.get('request').user \
-            if 'request' in self.context else None
+        request = self.context.get('request')
+        user = request.user if request else None
         if user and user.is_authenticated:
             return Favorite.objects.filter(user=user, recipe=obj).exists()
         return False
 
     def get_is_in_shopping_cart(self, obj):
-        user = self.context.get('request').user if 'request' \
-                                                   in self.context else None
+        request = self.context.get('request')
+        user = request.user if request else None
         if user and user.is_authenticated:
             return ShoppingList.objects.filter(user=user, recipe=obj).exists()
         return False
@@ -187,28 +188,28 @@ class RecipeSerializer(serializers.ModelSerializer):
                 f"Отсутствуют необходимые данные: {str(e)}"
             )
 
-        user = self.context['request'].user \
-            if 'request' in self.context and self.context[
-            'request'].user.is_authenticated else None
-        print(user)
+        request = self.context.get('request')
+        user = request.user if request and request.user.is_authenticated else None
+
+        if not user or not user.is_authenticated:
+            raise serializers.ValidationError("Authentication is  required.")
 
         if not user or not user.is_authenticated:
             raise serializers.ValidationError("Authentication is  required.")
 
         recipe = Recipe.objects.create(author=user, **validated_data)
 
-        for tag in tags_data:
-            recipe.tags.add(tag)
+        recipe.tags.add(*tags_data)
 
+        ingredients_to_create = []
         for ingredient_data in ingredients_data:
-            print(ingredient_data)
-            RecipeIngredient.objects.create(
+            ingredients_to_create.append(RecipeIngredient(
                 recipe=recipe,
-                ingredient=Ingredient.objects.get(
-                    id=ingredient_data['id']
-                ),
+                ingredient=Ingredient.objects.get(id=ingredient_data['id']),
                 amount=ingredient_data['amount']
-            )
+            ))
+
+        RecipeIngredient.objects.bulk_create(ingredients_to_create)
 
         recipe.save()
         return recipe
@@ -254,9 +255,8 @@ class SubscriptionUserSerializer(serializers.ModelSerializer):
                   'is_subscribed', 'recipes', 'recipes_count']
 
     def get_is_subscribed(self, obj):
-        user = (
-            self.context.get('request').user
-            if 'request' in self.context else None)
+        request = self.context.get('request')
+        user = request.user if request else None
         if user and user.is_authenticated:
             return Subscription.objects.filter(user=user, author=obj).exists()
         return False

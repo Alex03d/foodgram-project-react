@@ -8,7 +8,7 @@ class User(AbstractUser):
         ('admin', 'Администратор'),
     )
 
-    DEFAULT_ROLE = ROLES[0][0]
+    DEFAULT_ROLE = 'user'
 
     username = models.CharField(
         'username',

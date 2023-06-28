@@ -1,5 +1,7 @@
-from django.db import models
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+
 from users.models import User
 
 
@@ -40,7 +42,11 @@ class Recipe(models.Model):
         blank=True
     )
     tags = models.ManyToManyField(Tag, through='RecipeTag')
-    cooking_time = models.PositiveSmallIntegerField(default=0)
+    cooking_time = models.PositiveSmallIntegerField(
+        default=1,
+        validators=[MinValueValidator(1),
+                    MaxValueValidator(1000)]
+    )
     text = models.TextField()
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -82,7 +88,10 @@ class RecipeIngredient(models.Model):
         Ingredient,
         on_delete=models.CASCADE,
     )
-    amount = models.IntegerField()
+    amount = models.PositiveIntegerField(
+        validators=[MinValueValidator(1),
+                    MaxValueValidator(1000)
+                    ])
 
     def __str__(self):
         return f'{self.ingredient} - {self.amount}'
