@@ -1,6 +1,5 @@
 #version: '3.3'
 #services:
-#
 #  frontend:
 #    build:
 #      context: ../frontend
@@ -15,15 +14,45 @@
 #      - ./nginx.conf:/etc/nginx/conf.d/default.conf
 #      - ../frontend/build:/usr/share/nginx/html/
 #      - ../docs/:/usr/share/nginx/html/api/docs/
-
+#  db:
+#    image: postgres:latest
+#    environment:
+#      POSTGRES_DB: foodgram
+#      POSTGRES_USER: foodgram_user
+#      POSTGRES_PASSWORD: foodgram_password
+#    volumes:
+#      - ./data/db:/var/lib/postgresql/data
+#    ports:
+#      - "5432:5432"
 version: '3.3'
 services:
+
+#  frontend:
+#    build:
+#      context: ../frontend
+#      dockerfile: Dockerfile
+#    volumes:
+#      - ../frontend/:/app/result_build/
+#    depends_on:
+#      - backend
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: alex03d/foodgram_frontend:v1.0
     volumes:
       - ../frontend/:/app/result_build/
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:latest
+    volumes:
+      - postgres-db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: foodgram
+      POSTGRES_USER: foodgram_user
+      POSTGRES_PASSWORD: foodgram_password
+    ports:
+      - "5432:5432"
+
   nginx:
     image: nginx:1.19.3
     ports:
@@ -32,3 +61,29 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ../frontend/build:/usr/share/nginx/html/
       - ../docs/:/usr/share/nginx/html/api/docs/
+      - static_value:/usr/share/nginx/html/static/
+      - media_value:/usr/share/nginx/html/media/
+    depends_on:
+      - frontend
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - static_value:/backend/static/
+      - media_value:/backend/media/recipes
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: foodgram
+      DB_USER: foodgram_user
+      DB_PASSWORD: foodgram_password
+
+volumes:
+  postgres-db-data:
+  static_value:
+  media_value:
