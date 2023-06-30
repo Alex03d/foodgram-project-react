@@ -15,12 +15,12 @@ from .paginations import CustomPagination
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (IngredientSerializer, RecipeSerializer,
                           RecipeShortSerializer, SubscriptionSerializer,
-                          TagSerializer, UserSerializer)
+                          TagSerializer, MyUserSerializer, RecipeUpdateSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = MyUserSerializer
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(IsAuthenticated,))
@@ -34,7 +34,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     author=user
                 )
                 if created:
-                    serializer = UserSerializer(
+                    serializer = MyUserSerializer(
                         user,
                         context={'request': request}
                     )
@@ -79,7 +79,7 @@ class UserViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def me(self, request):
-        serializer = UserSerializer(request.user, context={'request': request})
+        serializer = MyUserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
 
 
@@ -128,12 +128,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    # def update(self, request, *args, **kwargs):
+    #     recipe = self.get_object()
+    #     data = request.data
+    #     serializer = RecipeSerializer(
+    #         recipe,
+    #         data=data,
+    #         context={'request': request}
+    #     )
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         return Response(serializer.data)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     def update(self, request, *args, **kwargs):
         recipe = self.get_object()
         data = request.data
-        serializer = RecipeSerializer(
+        serializer = RecipeUpdateSerializer(   # заменили на новый сериализатор
             recipe,
             data=data,
+            # partial=True,
             context={'request': request}
         )
         if serializer.is_valid():

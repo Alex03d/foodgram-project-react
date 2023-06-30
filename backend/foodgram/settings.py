@@ -8,7 +8,8 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = False
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -58,22 +59,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'foodgram.wsgi.application'
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
-#         'NAME': os.getenv('DB_NAME', 'foodgram'),
-#         'USER': os.getenv('DB_USER', 'foodgram_user'),
-#         'PASSWORD': os.getenv('DB_PASSWORD', 'foodgram_password'),
-#         'HOST': os.getenv('DB_HOST', 'localhost'),
-#         'PORT': os.getenv('DB_PORT', '5432')
-#     }
-# }
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
+            'NAME': os.getenv('POSTGRES_DB', 'foodgram'),
+            'USER': os.getenv('POSTGRES_USER', 'foodgram_user'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'foodgram_password'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432')
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -136,16 +139,16 @@ DJOSER = {
     },
 
     'SERIALIZERS': {
-        'user_create': 'api.serializers.serializers_users.MyUserCreateSerializer',
-        'user': 'api.serializers.serializers_users.MyUserSerializer',
-        'current_user': 'api.serializers.serializers_users.MyUserSerializer',
+        'user_create': 'api.serializers.MyUserCreateSerializer',
+        'user': 'api.serializers.MyUserSerializer',
+        'current_user': 'api.serializers.MyUserSerializer',
     },
 }
 
-
-DJOSER = {
-    'LOGIN_FIELD': 'email',
-}
+#
+# DJOSER = {
+#     'LOGIN_FIELD': 'email',
+# }
 
 AUTH_USER_MODEL = 'users.User'
 

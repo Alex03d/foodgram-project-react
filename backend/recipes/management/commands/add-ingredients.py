@@ -3,7 +3,7 @@ import os
 
 from django.conf import settings
 from django.core.management import BaseCommand
-from recipes.models import Ingredients
+from recipes.models import Ingredient
 
 
 class Command(BaseCommand):
@@ -17,6 +17,7 @@ class Command(BaseCommand):
 
         with open(os.path.join(
                 settings.BASE_DIR,
+                '..',
                 'data',
                 options['filename']),
                 'r',
@@ -24,7 +25,7 @@ class Command(BaseCommand):
             data = csv.reader(f)
             for row in data:
                 name, measurement_unit = row
-                Ingredients.objects.get_or_create(
+                Ingredient.objects.get_or_create(
                     name=name,
                     measurement_unit=measurement_unit,
                 )

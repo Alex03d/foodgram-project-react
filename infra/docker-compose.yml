@@ -98,7 +98,7 @@ services:
 
   db:
     image: postgres:latest
-    environment:
+    environment:exg
       POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - postgres-db-data:/var/lib/postgresql/data/
