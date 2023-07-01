@@ -16,12 +16,18 @@ router.register(r'users', CustomUserViewSet, basename='user')
 router.register(r'ingredients', IngredientViewSet, basename='ingredient')
 
 
+djoser_urls = [
+    path('', include('djoser.urls')),
+    path('auth/', include('djoser.urls.authtoken')),
+]
+
 urlpatterns = [
     # path('auth/', include('djoser.urls')),
     # path('auth/', include('djoser.urls.authtoken')),
     path('', include(router.urls)),
     path('recipes/<int:id>/shopping_cart/',
          ShoppingListManipulation.as_view()),
+    *djoser_urls,
 ]
 
 if settings.DEBUG:

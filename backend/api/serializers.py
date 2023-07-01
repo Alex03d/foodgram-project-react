@@ -405,9 +405,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         author_representation = representation.pop('author')
         return {**representation, **author_representation}
 
+
 class MyUserCreateSerializer(UserCreateSerializer):
-    """Сериализатор для обработки запросов на создание пользователя.
-    Валидирует создание пользователя с юзернеймом 'me'."""
 
     class Meta:
         model = User
@@ -419,26 +418,38 @@ class MyUserCreateSerializer(UserCreateSerializer):
             'password',
         )
 
-    def validate_email(self, value):
-        lower_email = value.lower()
-        if User.objects.filter(email__iexact=lower_email).exists():
-            raise ValidationError(
-                'Пользователь с таким email уже зарегистрирован'
-            )
-        return lower_email
-
-    def validate_username(self, value):
-        lower_username = value.lower()
-        if User.objects.filter(username__iexact=lower_username).exists():
-            raise ValidationError(
-                'Пользователь с таким username уже зарегистрирован'
-            )
-        if value == "me":
-            raise ValidationError(
-                'Невозможно создать пользователя с таким именем!'
-            )
-        return lower_username
-
-    def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        return user
+    # def validate_email(self, value):
+    #     lower_email = value.lower()
+    #     if User.objects.filter(email__iexact=lower_email).exists():
+    #         raise ValidationError(
+    #             'Пользователь с таким email уже зарегистрирован'
+    #         )
+    #     return lower_email
+    #
+    # def validate_username(self, value):
+    #     lower_username = value.lower()
+    #     if User.objects.filter(username__iexact=lower_username).exists():
+    #         raise ValidationError(
+    #             'Пользователь с таким username уже зарегистрирован'
+    #         )
+    #     if value == "me":
+    #         raise ValidationError(
+    #             'Невозможно создать пользователя с таким именем!'
+    #         )
+    #     return lower_username
+    # #
+    # # def create(self, validated_data):
+    # #     user = User.objects.create_user(**validated_data)
+    # #     return user
+    #
+    # def create(self, validated_data):
+    #     user = User(
+    #         email=validated_data['email'],
+    #         username=validated_data['username'],
+    #         first_name=validated_data['first_name'],
+    #         last_name=validated_data['last_name'],
+    #     )
+    #     user.set_password(validated_data['password'])
+    #     user.save()
+    #     print('создан новый пользователь')
+    #     return user
