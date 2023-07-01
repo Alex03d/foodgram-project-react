@@ -1,3 +1,56 @@
+version: '3.3'
+services:
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ../frontend/:/app/result_build/
+#    depends_on:
+#      - backend
+
+  db:
+    image: postgres:13.0-alpine
+    volumes:
+      - postgres-db-data-food:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+
+  nginx:
+    image: nginx:1.19.3
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ../frontend/build:/usr/share/nginx/html/
+      - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
+      - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml/
+      - static_value:/var/html/static/
+      - media_value:/var/html/media/
+    depends_on:
+      - frontend
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - static_value:/app_back/static/
+      - media_value:/app_back/media/
+      - docs:/app/api_back/docs/
+#    depends_on:
+#      - db
+    env_file:
+      - ./.env
+
+volumes:
+  postgres-db-data-food:
+  static_value:
+  media_value:
+  docs:
+
 #version: '3.3'
 #services:
 #  frontend:
@@ -83,58 +136,3 @@
 #  postgres-db-data:
 #  static_value:
 #  media_value:
-
-version: '3.3'
-services:
-
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-    volumes:
-      - ../frontend/:/app/result_build/
-    depends_on:
-      - backend
-
-  db:
-    image: postgres:latest
-    environment:exg
-      POSTGRES_HOST_AUTH_METHOD: trust
-    volumes:
-      - postgres-db-data:/var/lib/postgresql/data/
-    env_file:
-      - ./.env
-
-  nginx:
-    image: nginx:1.19.3
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
-      - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml/
-      - static_value:/var/html/static/
-      - media_value:/var/html/media/
-    depends_on:
-      - frontend
-
-  backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
-    restart: always
-    volumes:
-      - static_value:/app_back/static/
-      - media_value:/app_back/media/
-      - docs:/app/api_back/docs/
-    depends_on:
-      - db
-    env_file:
-      - ./.env
-
-volumes:
-  postgres-db-data:
-  static_value:
-  media_value:
-  docs:

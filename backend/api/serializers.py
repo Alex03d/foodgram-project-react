@@ -4,6 +4,7 @@ import uuid
 import webcolors
 from django.core.files.base import ContentFile
 from django.db import transaction
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
@@ -418,30 +419,31 @@ class MyUserCreateSerializer(UserCreateSerializer):
             'password',
         )
 
-    # def validate_email(self, value):
-    #     lower_email = value.lower()
-    #     if User.objects.filter(email__iexact=lower_email).exists():
-    #         raise ValidationError(
-    #             'Пользователь с таким email уже зарегистрирован'
-    #         )
-    #     return lower_email
-    #
-    # def validate_username(self, value):
-    #     lower_username = value.lower()
-    #     if User.objects.filter(username__iexact=lower_username).exists():
-    #         raise ValidationError(
-    #             'Пользователь с таким username уже зарегистрирован'
-    #         )
-    #     if value == "me":
-    #         raise ValidationError(
-    #             'Невозможно создать пользователя с таким именем!'
-    #         )
-    #     return lower_username
-    # #
-    # # def create(self, validated_data):
-    # #     user = User.objects.create_user(**validated_data)
-    # #     return user
-    #
+    def validate_email(self, value):
+        lower_email = value.lower()
+        if User.objects.filter(email__iexact=lower_email).exists():
+            raise ValidationError(
+                'Пользователь с таким email уже зарегистрирован'
+            )
+        return lower_email
+
+    def validate_username(self, value):
+        lower_username = value.lower()
+        if User.objects.filter(username__iexact=lower_username).exists():
+            raise ValidationError(
+                'Пользователь с таким username уже зарегистрирован'
+            )
+        if value == "me":
+            raise ValidationError(
+                'Невозможно создать пользователя с таким именем!'
+            )
+        return lower_username
+
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        print('создан новый пользователь')
+        return user
+
     # def create(self, validated_data):
     #     user = User(
     #         email=validated_data['email'],
@@ -449,7 +451,7 @@ class MyUserCreateSerializer(UserCreateSerializer):
     #         first_name=validated_data['first_name'],
     #         last_name=validated_data['last_name'],
     #     )
-    #     user.set_password(validated_data['password'])
     #     user.save()
+    #     user.set_password(validated_data['password'])
     #     print('создан новый пользователь')
     #     return user
