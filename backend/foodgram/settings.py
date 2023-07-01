@@ -141,15 +141,10 @@ DJOSER = {
 
     'SERIALIZERS': {
         'user_create': 'api.serializers.MyUserCreateSerializer',
-        'user': 'api.serializers.MyUserSerializer',
+        # 'user': 'api.serializers.MyUserSerializer',
         'current_user': 'api.serializers.MyUserSerializer',
     },
 }
-
-#
-# DJOSER = {
-#     'LOGIN_FIELD': 'email',
-# }
 
 AUTH_USER_MODEL = 'users.User'
 

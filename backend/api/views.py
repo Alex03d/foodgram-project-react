@@ -82,6 +82,19 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = MyUserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
 
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def set_password(self, request):
+        print('Начинаем')
+        user = request.user  # Получение текущего пользователя
+        if 'new_password' not in request.data:
+            return Response({"new_password": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        password = request.data['new_password']
+        user.set_password(password)
+        user.save()
+        print('Кончаем')
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class ShoppingListManipulation(views.APIView):
     permission_classes = [IsAuthenticated]
@@ -188,7 +201,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return response
 
-    @action(detail=True, methods=['post', 'delete'])
+    @action(detail=True, methods=['post', 'delete'], permission_classes=[IsAuthenticated])
     def favorite(self, request, pk=None):
         recipe = self.get_object()
         user = request.user

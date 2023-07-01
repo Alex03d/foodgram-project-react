@@ -84,6 +84,58 @@ class RecipeShortSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'image', 'cooking_time']
 
 
+class MyUserCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'password',
+        )
+
+    def validate_email(self, value):
+        lower_email = value.lower()
+        if User.objects.filter(email__iexact=lower_email).exists():
+            raise ValidationError(
+                'Пользователь с таким email уже зарегистрирован'
+            )
+        return lower_email
+
+    def validate_username(self, value):
+        lower_username = value.lower()
+        if User.objects.filter(username__iexact=lower_username).exists():
+            raise ValidationError(
+                'Пользователь с таким username уже зарегистрирован'
+            )
+        if value == "me":
+            raise ValidationError(
+                'Невозможно создать пользователя с таким именем!'
+            )
+        return lower_username
+
+    # def create(self, validated_data):
+    #     print('начал новый пользователь')
+    #     user = User.objects.create_user(**validated_data)
+    #     print('создан новый пользователь')
+    #     return user
+
+    def create(self, validated_data):
+        print('начинаю создавать новый пользователь в MyUserCreate')
+        user = User(
+            email=validated_data['email'],
+            username=validated_data['username'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+        )
+        user.save()
+        user.set_password(validated_data['password'])
+        print('создан новый пользователь в MyUserCreate')
+        return user
+
+
 class MyUserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
     recipes = RecipeShortSerializer(
@@ -98,7 +150,7 @@ class MyUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'id', 'username', 'first_name',
                   'last_name', 'is_subscribed', 'recipes',
-                  'recipes_count', 'subscriptions_count']
+                  'recipes_count', 'subscriptions_count', 'password']
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
@@ -112,6 +164,20 @@ class MyUserSerializer(serializers.ModelSerializer):
 
     def get_subscriptions_count(self, obj):
         return Subscription.objects.filter(user=obj).count()
+
+    def create(self, validated_data):
+        print('начинаю создавать новый пользователь в MyUser')
+        user = User(
+            email=validated_data['email'],
+            username=validated_data['username'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+        )
+        if 'password' in validated_data:
+            user.set_password(validated_data['password'])
+        user.save()
+        print('создан новый пользователь в MyUser')
+        return user
 
 
 class AuthorSerializer(serializers.ModelSerializer):
@@ -283,7 +349,7 @@ class RecipeUpdateSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     author = AuthorWithoutRecipesSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(many=True, source='recipeingredients')
-    image = Base64ImageField(max_length=None, use_url=True)
+    image = Base64ImageField(required=False, allow_null=True, use_url=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -307,9 +373,22 @@ class RecipeUpdateSerializer(serializers.ModelSerializer):
         data['tags'] = [Tag.objects.get(id=id) for id in tag_ids]
         return super().to_internal_value(data)
 
+    # @transaction.atomic
+    # def update(self, instance, validated_data):
+    #     tags = validated_data.pop('tags')
+    #     ingredients = validated_data.pop('ingredients')
+    #     RecipeIngredient.objects.filter(recipe=instance).delete()
+    #     RecipeTag.objects.filter(recipe=instance).delete()
+    #     instance = super().update(instance, validated_data)
+    #     self.get_tags(instance, tags)
+    #     self.get_ingredients(instance, ingredients)
+    #     return instance
+
     def update(self, instance, validated_data):
+        print('начинаю обновление')
         with transaction.atomic():
             tags_data = validated_data.pop('tags', None) if 'tags' in validated_data else None
+            # image_data = validated_data.pop('image', None) if 'image' in validated_data else None
             ingredients_data = validated_data.pop('recipeingredients', None) if 'recipeingredients' in validated_data else None
 
             for attr, value in validated_data.items():
@@ -329,11 +408,13 @@ class RecipeUpdateSerializer(serializers.ModelSerializer):
                         defaults={'amount': ingredient_data['amount']}
                     )
 
+            # print(image_data)
+
             if tags_data is not None:
                 instance.tags.clear()
                 for tag in tags_data:
                     instance.tags.add(tag)
-
+        print('завершаю обновление')
         return instance
 
     def get_tags(self, obj):
@@ -405,53 +486,3 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         author_representation = representation.pop('author')
         return {**representation, **author_representation}
-
-
-class MyUserCreateSerializer(UserCreateSerializer):
-
-    class Meta:
-        model = User
-        fields = (
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'password',
-        )
-
-    def validate_email(self, value):
-        lower_email = value.lower()
-        if User.objects.filter(email__iexact=lower_email).exists():
-            raise ValidationError(
-                'Пользователь с таким email уже зарегистрирован'
-            )
-        return lower_email
-
-    def validate_username(self, value):
-        lower_username = value.lower()
-        if User.objects.filter(username__iexact=lower_username).exists():
-            raise ValidationError(
-                'Пользователь с таким username уже зарегистрирован'
-            )
-        if value == "me":
-            raise ValidationError(
-                'Невозможно создать пользователя с таким именем!'
-            )
-        return lower_username
-
-    def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        print('создан новый пользователь')
-        return user
-
-    # def create(self, validated_data):
-    #     user = User(
-    #         email=validated_data['email'],
-    #         username=validated_data['username'],
-    #         first_name=validated_data['first_name'],
-    #         last_name=validated_data['last_name'],
-    #     )
-    #     user.save()
-    #     user.set_password(validated_data['password'])
-    #     print('создан новый пользователь')
-    #     return user
