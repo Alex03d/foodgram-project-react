@@ -8,7 +8,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['158.160.12.176', '127.0.0.1', 'localhost', 'alex03dd.hopto.org']
+ALLOWED_HOSTS = ['158.160.12.176', '127.0.0.1', 'localhost', 'yahw03d.hopto.org']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -150,7 +150,7 @@ AUTH_USER_MODEL = 'users.User'
 CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:9000",
-    "http://127.0.0.1:9000",
-    "http://your-production-domain.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://yahw03d.hopto.org",
 ]
