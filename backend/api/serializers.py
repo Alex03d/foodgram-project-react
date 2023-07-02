@@ -3,20 +3,14 @@ import uuid
 
 import webcolors
 from django.core.files.base import ContentFile
+from django.core.exceptions import ValidationError
 from django.db import transaction
-from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers, status
-from rest_framework.response import Response
 
 
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingList, Tag, RecipeTag)
 from users.models import User, Subscription
-
-
-from django.core.exceptions import ValidationError
-from djoser.serializers import UserCreateSerializer
-from users.models import User  # Или другой путь, если ваша модель User расположена в другом приложении
 
 
 class Base64ImageField(serializers.ImageField):
@@ -115,12 +109,6 @@ class MyUserCreateSerializer(serializers.ModelSerializer):
                 'Невозможно создать пользователя с таким именем!'
             )
         return lower_username
-
-    # def create(self, validated_data):
-    #     print('начал новый пользователь')
-    #     user = User.objects.create_user(**validated_data)
-    #     print('создан новый пользователь')
-    #     return user
 
     def create(self, validated_data):
         print('начинаю создавать новый пользователь в MyUserCreate')
@@ -304,26 +292,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe.save()
         return recipe
 
-    # def update(self, instance, validated_data):
-    #     ingredients_data = validated_data.pop('recipeingredients')
-    #     tags_data = validated_data.pop('tags')
-    #
-    #     Recipe.objects.filter(id=instance.id).update(**validated_data)
-    #
-    #     instance.recipeingredients.all().delete()
-    #
-    #     for ingredient_data in ingredients_data:
-    #         RecipeIngredient.objects.create(
-    #             recipe=instance,
-    #             ingredient=Ingredient.objects.get(id=ingredient_data['id']),
-    #             amount=ingredient_data['amount']
-    #         )
-    #
-    #     instance.tags.clear()
-    #     for tag in tags_data:
-    #         instance.tags.add(tag.id)
-    #
-    #     return instance
     def to_representation(self, instance):
         context = {'request': self.context.get('request')}
         return RecipeListSerializer(instance, context=context).data
@@ -348,7 +316,9 @@ class AuthorWithoutRecipesSerializer(serializers.ModelSerializer):
 class RecipeUpdateSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     author = AuthorWithoutRecipesSerializer(read_only=True)
-    ingredients = RecipeIngredientSerializer(many=True, source='recipeingredients')
+    ingredients = RecipeIngredientSerializer(
+        many=True,
+        source='recipeingredients')
     image = Base64ImageField(required=False, allow_null=True, use_url=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -373,23 +343,18 @@ class RecipeUpdateSerializer(serializers.ModelSerializer):
         data['tags'] = [Tag.objects.get(id=id) for id in tag_ids]
         return super().to_internal_value(data)
 
-    # @transaction.atomic
-    # def update(self, instance, validated_data):
-    #     tags = validated_data.pop('tags')
-    #     ingredients = validated_data.pop('ingredients')
-    #     RecipeIngredient.objects.filter(recipe=instance).delete()
-    #     RecipeTag.objects.filter(recipe=instance).delete()
-    #     instance = super().update(instance, validated_data)
-    #     self.get_tags(instance, tags)
-    #     self.get_ingredients(instance, ingredients)
-    #     return instance
-
     def update(self, instance, validated_data):
-        print('начинаю обновление')
         with transaction.atomic():
-            tags_data = validated_data.pop('tags', None) if 'tags' in validated_data else None
-            # image_data = validated_data.pop('image', None) if 'image' in validated_data else None
-            ingredients_data = validated_data.pop('recipeingredients', None) if 'recipeingredients' in validated_data else None
+            tags_data = (
+                validated_data.pop('tags', None)
+                if 'tags' in validated_data
+                else None
+            )
+            ingredients_data = (
+                validated_data.pop('recipeingredients', None)
+                if 'recipeingredients' in validated_data
+                else None
+            )
 
             for attr, value in validated_data.items():
                 setattr(instance, attr, value)
@@ -398,17 +363,21 @@ class RecipeUpdateSerializer(serializers.ModelSerializer):
 
             if ingredients_data is not None:
                 for ingredient in instance.recipeingredients.all():
-                    if ingredient.ingredient.id not in [i['id'] for i in ingredients_data]:
+                    if (
+                            ingredient.ingredient.id not in
+                            [i['id'] for i in ingredients_data]
+                    ):
                         ingredient.delete()
 
                 for ingredient_data in ingredients_data:
                     RecipeIngredient.objects.update_or_create(
                         recipe=instance,
-                        ingredient=Ingredient.objects.get(id=ingredient_data['id']),
+                        ingredient=Ingredient.objects.get(
+                            id=ingredient_data['id']
+                        ),
                         defaults={'amount': ingredient_data['amount']}
                     )
 
-            # print(image_data)
 
             if tags_data is not None:
                 instance.tags.clear()
@@ -434,20 +403,6 @@ class RecipeUpdateSerializer(serializers.ModelSerializer):
         if user and user.is_authenticated:
             return ShoppingList.objects.filter(user=user, recipe=obj).exists()
         return False
-
-    # def get_is_favorited(self, obj):
-    #     request = self.context.get('request')
-    #     user = request.user if request else None
-    #     if user and user.is_authenticated:
-    #         return Favorite.objects.filter(user=user, recipe=obj).exists()
-    #     return False
-    #
-    # def get_is_in_shopping_cart(self, obj):
-    #     request = self.context.get('request')
-    #     user = request.user if request else None
-    #     if user and user.is_authenticated:
-    #         return ShoppingList.objects.filter(user=user, recipe=obj).exists()
-    #     return False
 
 
 class SubscriptionUserSerializer(serializers.ModelSerializer):

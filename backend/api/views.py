@@ -15,7 +15,8 @@ from .paginations import CustomPagination
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (IngredientSerializer, RecipeSerializer,
                           RecipeShortSerializer, SubscriptionSerializer,
-                          TagSerializer, MyUserSerializer, RecipeUpdateSerializer)
+                          TagSerializer, MyUserSerializer,
+                          RecipeUpdateSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -79,15 +80,22 @@ class UserViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def me(self, request):
-        serializer = MyUserSerializer(request.user, context={'request': request})
+        serializer = MyUserSerializer(
+            request.user,
+            context={'request': request})
         return Response(serializer.data)
 
-    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(
+        detail=False,
+        methods=['post'],
+        permission_classes=[IsAuthenticated])
     def set_password(self, request):
         print('Начинаем')
         user = request.user  # Получение текущего пользователя
         if 'new_password' not in request.data:
-            return Response({"new_password": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"new_password": ["This field is required."]},
+                status=status.HTTP_400_BAD_REQUEST)
 
         password = request.data['new_password']
         user.set_password(password)
@@ -141,18 +149,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # def update(self, request, *args, **kwargs):
-    #     recipe = self.get_object()
-    #     data = request.data
-    #     serializer = RecipeSerializer(
-    #         recipe,
-    #         data=data,
-    #         context={'request': request}
-    #     )
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response(serializer.data)
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     def update(self, request, *args, **kwargs):
         recipe = self.get_object()
         data = request.data
@@ -201,7 +197,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return response
 
-    @action(detail=True, methods=['post', 'delete'], permission_classes=[IsAuthenticated])
+    @action(
+        detail=True,
+        methods=['post', 'delete'],
+        permission_classes=[IsAuthenticated])
     def favorite(self, request, pk=None):
         recipe = self.get_object()
         user = request.user
