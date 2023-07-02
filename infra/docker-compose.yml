@@ -2,7 +2,7 @@ version: '3.3'
 services:
 
   frontend:
-    image: alex03d/foodgram_frontend:v1.0
+    image: alex03dd/foodgram_frontend:v1.0
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
