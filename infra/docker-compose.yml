@@ -2,9 +2,7 @@ version: '3.3'
 services:
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: alex03d/foodgram_frontend:v1.0
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
@@ -32,9 +30,7 @@ services:
       - frontend
 
   backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
+    image: alex03d/foodgram_api:v1
     restart: always
     volumes:
       - static_value:/app_back/static/
