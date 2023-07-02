@@ -292,6 +292,12 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe.save()
         return recipe
 
+    def validate_name(self, value):
+        if not value.isalpha():
+            raise serializers.ValidationError("Название рецепта должно "
+                                              "содержать хотя бы одну букву")
+        return value
+
     def to_representation(self, instance):
         context = {'request': self.context.get('request')}
         return RecipeListSerializer(instance, context=context).data
