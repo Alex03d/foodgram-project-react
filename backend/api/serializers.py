@@ -5,11 +5,11 @@ import webcolors
 from django.core.files.base import ContentFile
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from rest_framework import serializers, status
+from rest_framework import serializers
 
 
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingList, Tag, RecipeTag)
+                            ShoppingList, Tag)
 from users.models import User, Subscription
 
 
@@ -377,7 +377,6 @@ class RecipeUpdateSerializer(serializers.ModelSerializer):
                         ),
                         defaults={'amount': ingredient_data['amount']}
                     )
-
 
             if tags_data is not None:
                 instance.tags.clear()
