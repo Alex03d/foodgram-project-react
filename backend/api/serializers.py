@@ -295,7 +295,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     def validate_name(self, value):
         if not value.isalpha():
             raise serializers.ValidationError("Название рецепта должно "
-                                              "содержать хотя бы одну букву")
+                                              "не может состоять из цифр"
+                                              "и знаков")
         return value
 
     def to_representation(self, instance):
